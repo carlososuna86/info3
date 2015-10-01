@@ -1,0 +1,205 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf8">
+<title>Info3 2015 - Punto Medio - Circunferencia</title>
+
+<script id="shader-fs" type="x-shader/x-fragment">
+    precision mediump float;
+
+    void main(void) {
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    }
+</script>
+
+<script id="shader-vs" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+
+    void main(void) {
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+    }
+</script>
+
+<script type="text/javascript">
+  var circleX;
+  var circleY;
+  var circleR;
+  
+  var canvasH;
+  var canvasW;
+  
+  var pixelH;
+  var pixelW;
+  
+  function obtenerParametros() {
+    circleX = parseInt(document.getElementById("circleX").value);
+    circleY = parseInt(document.getElementById("circleY").value);
+    circleR = parseInt(document.getElementById("circleRadius").value);
+    
+    canvasH = parseInt(document.getElementById("canvasH").value);
+    canvasW = parseInt(document.getElementById("canvasW").value);
+    
+    pixelH = parseInt(document.getElementById("pixelH").value);
+    pixelW = parseInt(document.getElementById("pixelW").value);
+  }  
+
+</script>
+
+<script type="text/javascript">
+function drawCircle(x0, y0, radius, canvas){
+  var x = radius;
+  var y = 0;
+  var decisionOver2 = 1 - x;   // Decision criterion divided by 2 evaluated at x=r, y=0
+  var imageWidth = canvas.width;
+  var imageHeight = canvas.height;
+  var context = canvas.getContext('2d');
+  var imageData = context.getImageData(0, 0, imageWidth, imageHeight);
+  var pixelData = imageData.data;
+  var makePixelIndexer = function(width){
+    return function(i,j){
+      var index = j*(width*4) + i*4;
+      //index points to the R chanel of pixel 
+      //at column i and row j calculated from top left
+      return index;
+    };
+  }
+  var pixelIndexer = makePixelIndexer(imageWidth);
+  
+  var drawPixel = function(x,y){
+    var idx = pixelIndexer(x,y);
+    pixelData[idx] = 255;    //red
+    pixelData[idx+1] = 0;    //green
+    pixelData[idx+2] = 255;//blue
+    pixelData[idx+3] = 255;//alpha
+  };
+  
+  var drawSquare = function(x,y,w,h){
+    var xmin = w * x;
+    var xmax = w * x + w;
+   
+    var ymin = h * y;
+    var ymax = h * y + h;
+    
+    for (i = xmin; i < xmax; i++) {
+      for (j = ymin; j < ymax; j++) {
+        drawPixel(i,j);
+      }
+    }
+  }
+  
+  
+  var drawingLoop = function() {
+    if(x >= y){
+      drawSquare( x + x0,  y + y0, pixelW, pixelH);
+      drawSquare( y + x0,  x + y0, pixelW, pixelH);
+      drawSquare(-x + x0,  y + y0, pixelW, pixelH);
+      drawSquare(-y + x0,  x + y0, pixelW, pixelH);
+      drawSquare(-x + x0, -y + y0, pixelW, pixelH);
+      drawSquare(-y + x0, -x + y0, pixelW, pixelH);
+      drawSquare( x + x0, -y + y0, pixelW, pixelH);
+      drawSquare( y + x0, -x + y0, pixelW, pixelH);
+      y++;
+      
+      if (decisionOver2<=0){
+        decisionOver2 += 2 * y + 1;   // Change in decision criterion for y -> y+1
+      }else{    
+        x--;
+        decisionOver2 += 2 * (y - x) + 1;   // Change for y -> y+1, x -> x-1
+      }
+      
+      context.putImageData(imageData,0,0);
+      
+      // call next iteration
+      setTimeout(drawingLoop, '1000');
+    }else{
+      
+    }
+  };
+  
+  setTimeout(drawingLoop, '1000');
+}
+</script>
+
+<script type="text/javascript">  
+  function prepararCanvas() {
+    obtenerParametros();
+    
+    var canvas = document.getElementById("punto-medio-circunferencia");
+    
+    canvas.height = canvasH;
+    canvas.width = canvasW;
+  }
+  
+  function reajustarCanvas() {
+    var canvas = document.getElementById("punto-medio-circunferencia");
+    var iCanvasH = document.getElementById("canvasH");
+    var iCanvasW = document.getElementById("canvasW");
+
+    iCanvasH.value = (circleY + circleR) * pixelH;
+    iCanvasW.value = (circleX + circleR) * pixelW;
+  }
+  
+  function dibujar() {
+    prepararCanvas();
+    
+    if (canvasW < (circleX + circleR) * pixelW) {
+      alert("El canvas es muy pequeño para el dibujo");
+      reajustarCanvas();
+      return;
+    }
+    
+    if (canvasH < (circleY + circleR) * pixelH) {
+      alert("El canvas es muy pequeño para el dibujo");
+      reajustarCanvas();
+      return;
+    }
+    
+    var canvas = document.getElementById("punto-medio-circunferencia");
+    drawCircle(circleX, circleY, circleR, canvas);
+  }
+</script>
+
+</head>
+<body onload="prepararCanvas();">
+
+  <table>
+    <tr>
+      <td>
+  <table>
+    <tr>
+      <th colspan="4"><p>Implementación de algoritmo de punto medio.</p></th>
+    </tr>
+    <tr>
+      <th>Círculo:</th>
+      <td>X <input id="circleX" type="text" style="width: 50px;" value="50"/></td>
+      <td>Y <input id="circleY" type="text" style="width: 50px;" value="50"/></td>
+      <td>Radio <input id="circleRadius" type="text" style="width: 50px;"value="40" /></td>
+    </tr>
+    <tr>
+      <th>Lienzo:</th>
+      <td>Alto <input id="canvasH" type="text" style="width: 50px;" value="500"/></td>
+      <td>Largo <input id="canvasW" type="text" style="width: 50px;" value="500"/></td>
+    </tr>
+    <tr>
+      <th>Resolución:<th>
+      <td>Alto <input id="pixelH" type="text" style="width: 50px;" value="3"/></td>
+      <td>Largo <input id="pixelW" type="text" style="width: 50px;" value="3"/></td>
+    </tr>
+    <tr>
+      <td colspan="3" style="text-align: center;"><input type="button" value="Simular" onclick="dibujar()"/></td>
+    </tr>
+    
+  </table>
+  <br />
+  <canvas id="punto-medio-circunferencia" style="border:1px solid #000000;" width="500" height="500"/>
+  <br />
+    </td>
+      <td>
+        <div id="messageLog"></div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
